@@ -35,11 +35,19 @@ def fetch_stock_data(symbol, days=66):
 
 def generate_plot(symbol, actual, lstm_pred):
     plt.figure(figsize=(10, 5))
-    plt.plot(actual.index, actual.values, label='Actual', color='blue')
-    plt.plot(actual.index[-1], lstm_pred, 'ro', label='LSTM Prediction')
+    plt.plot(actual.index, actual.values, label='Actual Price', color='blue')
+    plt.plot(actual.index[-1], lstm_pred, 'ro', markersize=8, label='LSTM Prediction')
+    
+    # Add today's price annotation
+    plt.annotate(f'Today: Rs {actual.values[-1]:.2f}', 
+                xy=(actual.index[-1], actual.values[-1]),
+                xytext=(10, 10), textcoords='offset points',
+                bbox=dict(boxstyle='round,pad=0.5', fc='yellow', alpha=0.5),
+                arrowprops=dict(arrowstyle='->'))
+    
     plt.title(f'{symbol} Price Prediction')
     plt.xlabel('Date')
-    plt.ylabel('Price ($)')
+    plt.ylabel('Price (Rs)')
     plt.legend()
     plt.grid(True)
     plt.xticks(rotation=45)
@@ -62,6 +70,9 @@ def predict():
         lstm_model, scaler = load_models()
         data = fetch_stock_data(symbol)
         
+        # Get today's actual price
+        today_price = data['Close'].iloc[-1]
+        
         # LSTM Prediction
         scaled_data = scaler.transform(data.values)
         lstm_input = scaled_data[-60:].reshape(1, 60, 1)
@@ -71,6 +82,7 @@ def predict():
         
         return jsonify({
             'symbol': symbol,
+            'actual_price': round(today_price, 2),  # Added current price
             'lstm': round(lstm_value, 2),
             'plot_url': plot_url,
             'status': 'success'
@@ -81,7 +93,6 @@ def predict():
             'status': 'error',
             'message': str(e)
         }), 400
-
 if __name__ == '__main__':
     os.makedirs("backend", exist_ok=True)
     app.run(host='0.0.0.0', port=5000, debug=True)
