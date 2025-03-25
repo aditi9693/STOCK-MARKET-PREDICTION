@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stock Predictor</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        h1 { color: #333; text-align: center; }
+        form { display: flex; margin: 20px 0; }
+        input { flex: 1; padding: 10px; font-size: 16px; }
+        button { padding: 10px 20px; background: #4CAF50; color: white; border: none; cursor: pointer; }
+        #results { margin-top: 20px; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .prediction { margin: 10px 0; padding: 10px; background: #f9f9f9; }
+        #plot { width: 100%; margin-top: 20px; }
+        #loading { display: none; text-align: center; }
+        .error { color: red; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Stock Price Predictor</h1>
+    <form id="prediction-form">
+        <input type="text" name="symbol" placeholder="Enter stock symbol (e.g. AAPL)" value="AAPL" required>
+        <button type="submit">Predict</button>
+    </form>
+    
+    <div id="loading">Loading...</div>
+    <div id="results" style="display: none;">
+        <h2 id="symbol-header"></h2>
+    
+        <div class="prediction">
+            <strong>LSTM Prediction:</strong> Rs <span id="lstm-pred"></span>
+        </div>
+        <img id="plot">
+    </div>
+    <div id="error-message" class="error" style="display: none;"></div>
+    
+    <script>
+        document.getElementById('prediction-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('error-message').style.display = 'none';
+            
+            const formData = new FormData(e.target);
+            
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'error') {
+                    throw new Error(data.message);
+                }
+                
+                document.getElementById('symbol-header').textContent = data.symbol;
+                document.getElementById('lstm-pred').textContent = data.lstm;
+                document.getElementById('plot').src = 'data:image/png;base64,' + data.plot_url;
+                document.getElementById('results').style.display = 'block';
+                
+            } catch (error) {
+                document.getElementById('error-message').textContent = error.message;
+                document.getElementById('error-message').style.display = 'block';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
